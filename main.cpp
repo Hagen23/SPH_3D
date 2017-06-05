@@ -53,8 +53,6 @@ float cubeFaces[24][3] =
 	{0.0,0.0,1.0}, {0,1.0,1.0}, {1.0,1.0,1.0}, {1.0,0,1.0}
 };
 
-float getValueFromRelation(float value, float minColorVar=0.0f, float maxColorVar=1.0, float minVelVar = -0.01, float maxVelVar = 0.01);
-
 SPH *sph;
 int winX = 600;
 int winY = 600;
@@ -122,12 +120,6 @@ void display (void)
 	display_points();
 	
 	glutSwapBuffers();
-}
-
-float getValueFromRelation(float value, float minColorVar, float maxColorVar, float minVelVar , float maxVelVar )
-{
-	float ratio = (value - minVelVar) / (maxVelVar - minVelVar);
-	return ratio * (maxColorVar -  minColorVar) + minColorVar;
 }
 
 void idle(void)
@@ -233,9 +225,6 @@ void init(void)
 int main( int argc, const char **argv ) {
 
 	srand((unsigned int)time(NULL));
-	// OpenGL configuration and GLUT calls  initialization
-    // these need to be made before the other OpenGL
-    // calls, else we get a seg fault
 	glutInit(&argc, (char**)argv);
 	glutInitDisplayMode (GLUT_DOUBLE | GLUT_RGB | GLUT_DEPTH);
 	glutInitWindowSize (winX, winY); 
