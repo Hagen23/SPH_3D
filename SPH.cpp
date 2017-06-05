@@ -225,7 +225,7 @@ void SPH::Computer_Force()
 				Distance = p->pos - np->pos;
 				float dis2 = (float)Distance.getNormSquared();
 
-				if((dis2 < kernel *kernel)&&(dis2 > INF))
+				if(dis2 > INF)
 				{
 					float dis = sqrt(dis2);
 
@@ -243,10 +243,10 @@ void SPH::Computer_Force()
 			}
 		}
 		/// Sum of the forces that make up the fluid, Eq.9
-		p->acc = p->acc/p->dens + Gravity;
-
-		// p->acc += Vector3(100.0f, 0.0f, 0.0f) / p->dens;
-		// p->acc += Vector3(0.0f, 0.0f, 100.0f) / p->dens;
+		p->acc = p->acc/p->dens;
+		
+		p->acc += Gravity;
+		//  p->acc += Vector3(10.0f, 0.0f, 0.0f);
 	}
 }
 
