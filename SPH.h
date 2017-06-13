@@ -31,6 +31,7 @@ class SPH
 
 		float Poly6_constant, Spiky_constant, Visco_Constant;
 
+		Vector3 max_vel = Vector3(INF, INF, INF);
 		Particle *Particles;
 		Cell *Cells;
 

@@ -13,14 +13,14 @@ using namespace std;
 SPH::SPH()
 {
 	kernel = 0.04f;
-	mass = 0.02f;
+	mass = 0.01f;
 
 	Max_Number_Paticles = 50000;
 	Number_Particles = 0;
 
 	World_Size = Vector3(1.0f, 1.0f, 1.0f);
 
-	Cell_Size = kernel;			// cell size = kernel or h
+	Cell_Size = kernel;						// cell size = kernel or h
 	Grid_Size = World_Size / Cell_Size;
 	Grid_Size.x = (int)Grid_Size.x;
 	Grid_Size.y = (int)Grid_Size.y;
@@ -31,9 +31,13 @@ SPH::SPH()
 	Gravity = Vector3(0.0f, -9.8f, 0.0f);
 	K = 1.5f;
 	Stand_Density = 1000.0f;
-	Time_Delta = 0.002f;
+	max_vel = Vector3(3.0f, 3.0f, 3.0f);
+
+	/// Time step is calculated as in 2016 - Divergence-Free SPH for Incompressible and Viscous Fluids. 
+	/// Then we adapt the time step size according to the Courant-Friedrich-Levy (CFL) condition [6] ∆t ≤ 0.4 * d / (||vmax||)
+	Time_Delta = 0.4 * kernel / sqrt(max_vel.getNormSquared());
 	Wall_Hit = -1.0f;
-	mu = 200.0f;
+	mu = 80.0f;
 
 	Particles = new Particle[Max_Number_Paticles];
 	Cells = new Cell[Number_Cells];
@@ -45,6 +49,7 @@ SPH::SPH()
 	cout<<"Grid_Size_X : "<<Grid_Size.x<<endl;
 	cout<<"Grid_Size_Y : "<<Grid_Size.y<<endl;
 	cout<<"Cell Number : "<<Number_Cells<<endl;
+	cout<<"Time Delta : "<<Time_Delta<<endl;
 }
 
 SPH::~SPH()
@@ -64,9 +69,9 @@ void SPH::Init_Fluid()
 	Vector3 pos;
 	Vector3 vel(0.0f, 0.0f, 0.0f);
 
-	for(float k = World_Size.z * 0.3f; k < World_Size.z * 0.7f; k += kernel * 0.5f)
-	for(float j = World_Size.y * 0.3f; j < World_Size.y * 0.7f; j += kernel * 0.5f)
-	for(float i = World_Size.x * 0.3f; i < World_Size.x * 0.7f; i += kernel * 0.5f)
+	for(float k = World_Size.z * 0.3f; k < World_Size.z * 0.7f; k += kernel * 0.6f)
+	for(float j = World_Size.y * 0.3f; j < World_Size.y * 0.7f; j += kernel * 0.6f)
+	for(float i = World_Size.x * 0.3f; i < World_Size.x * 0.7f; i += kernel * 0.6f)
 	{
 			pos = Vector3(i, j, k);
 			Init_Particle(pos, vel);
@@ -76,6 +81,9 @@ void SPH::Init_Fluid()
 
 void SPH::Init_Particle(Vector3 pos, Vector3 vel)
 {
+	if(Number_Particles + 1 > Max_Number_Paticles)
+		return;
+
 	Particle *p = &(Particles[Number_Particles]);
 	p->pos = pos;
 	p->vel = vel;
@@ -225,7 +233,7 @@ void SPH::Computer_Force()
 				Distance = p->pos - np->pos;
 				float dis2 = (float)Distance.getNormSquared();
 
-				if((dis2 < kernel *kernel)&&(dis2 > INF))
+				if(dis2 > INF)
 				{
 					float dis = sqrt(dis2);
 
@@ -242,17 +250,20 @@ void SPH::Computer_Force()
 				np = np->next;
 			}
 		}
-		/// Sum of the forces that make up the fluid, Eq.9
-		p->acc = p->acc/p->dens + Gravity;
-
-		// p->acc += Vector3(100.0f, 0.0f, 0.0f) / p->dens;
-		// p->acc += Vector3(0.0f, 0.0f, 100.0f) / p->dens;
+		/// Sum of the forces that make up the fluid, Eq.8
+		p->acc = p->acc/p->dens;
+		
+		p->acc += Gravity;
+		//  p->acc += Vector3(10.0f, 0.0f, 0.0f);
 	}
 }
 
+/// Time integration as in 2016 - Fluid simulation by the SPH Method, a survey.
+/// Eq.13 and Eq.14
 void SPH::Update_Pos_Vel()
 {
 	Particle *p;
+	
 	for(int i=0; i < Number_Particles; i++)
 	{
 		p = &Particles[i];
