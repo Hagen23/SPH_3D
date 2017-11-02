@@ -1,5 +1,5 @@
 CC = g++
-CFLAGS = -std=c++11 
+CFLAGS = -std=c++11 -Ofast
 INCLUDES =
 LDFLAGS = -lGL -lglut -lGLU
 DEBUGF = $(CFLAGS) -ggdb
