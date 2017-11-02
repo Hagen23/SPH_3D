@@ -5,18 +5,27 @@ LDFLAGS = -lGL -lglut -lGLU
 DEBUGF = $(CFLAGS) -ggdb
 SOURCES = *.cpp
 OUTF = build/
+MKDIR_P = mkdir -p
 
-build: $(SOURCES) $(OUTF)sph
+all: build
 
-$(OUTF)sph:
+directory: $(OUTF)
+
+build: directory $(SOURCES) $(OUTF)sph
+
+$(OUTF):
+	$(MKDIR_P) $(OUTF)
+
+$(OUTF)sph: $(OUTF)
 	$(CC) $(CFLAGS) $(INCLUDES) -o $(OUTF)sph $(SOURCES) $(LDFLAGS)
 
-debug: $(SOURCES) $(OUTF)sph_d
+debug: directory $(SOURCES) $(OUTF)sph_d
 
 $(OUTF)sph_d:
 	$(CC) -o $(OUTF)sph_d $(SOURCES) $(INCLUDES) $(LDFLAGS) $(DEBUGF)
 
-clean: 
-	rm build/*
+clean:
+	@[ -f $(OUTF)sph ] && rm $(OUTF)sph || true
+	@[ -f $(OUTF)sph_d ] && rm $(OUTF)sph_d || true
 
 rebuild: clean build
