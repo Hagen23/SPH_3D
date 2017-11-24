@@ -12,7 +12,7 @@ using namespace std;
 
 SPH::SPH()
 {
-	kernel = 0.04f;
+	kernel = 0.02;
 	mass = 0.01f;
 
 	Max_Number_Paticles = 50000;
@@ -20,11 +20,11 @@ SPH::SPH()
 
 	World_Size = Vector3(1.0f, 1.0f, 1.0f);
 
-	Cell_Size = kernel;						// cell size = kernel or h
+	Cell_Size = 1.f/64.f*2;						// cell size = kernel or h
 	Grid_Size = World_Size / Cell_Size;
-	Grid_Size.x = (int)Grid_Size.x;
-	Grid_Size.y = (int)Grid_Size.y;
-	Grid_Size.z = (int)Grid_Size.z;
+	Grid_Size.x = 64;//(int)Grid_Size.x;
+	Grid_Size.y = 64;//(int)Grid_Size.y;
+	Grid_Size.z = 64;//(int)Grid_Size.z;
 
 	Number_Cells = (int)Grid_Size.x * (int)Grid_Size.y * (int)Grid_Size.z;
 
@@ -49,6 +49,7 @@ SPH::SPH()
 	cout<<"Grid_Size_X : "<<Grid_Size.x<<endl;
 	cout<<"Grid_Size_Y : "<<Grid_Size.y<<endl;
 	cout<<"Cell Number : "<<Number_Cells<<endl;
+	cout<<"Cell size : "<<Cell_Size<<endl;
 	cout<<"Time Delta : "<<Time_Delta<<endl;
 }
 
@@ -69,9 +70,9 @@ void SPH::Init_Fluid()
 	Vector3 pos;
 	Vector3 vel(0.0f, 0.0f, 0.0f);
 
-	for(float k = World_Size.z * 0.3f; k < World_Size.z * 0.7f; k += kernel * 0.6f)
-	for(float j = World_Size.y * 0.3f; j < World_Size.y * 0.7f; j += kernel * 0.6f)
-	for(float i = World_Size.x * 0.3f; i < World_Size.x * 0.7f; i += kernel * 0.6f)
+	for(float k = World_Size.z * 0.3f; k < World_Size.z * 0.7f; k += 0.016f)
+	for(float j = World_Size.y * 0.3f; j < World_Size.y * 0.7f; j += 0.016f)
+	for(float i = World_Size.x * 0.3f; i < World_Size.x * 0.7f; i += 0.016f)
 	{
 			pos = Vector3(i, j, k);
 			Init_Particle(pos, vel);
@@ -96,19 +97,25 @@ void SPH::Init_Particle(Vector3 pos, Vector3 vel)
 Vector3 SPH::Calculate_Cell_Position(Vector3 pos)
 {
 	Vector3 cellpos = pos / Cell_Size;
-	cellpos.x = (int)cellpos.x;
-	cellpos.y = (int)cellpos.y;
-	cellpos.z = (int)cellpos.z;
+	cellpos.x = floor(cellpos.x);
+	cellpos.y = floor(cellpos.y);
+	cellpos.z = floor(cellpos.z);
 	return cellpos;
 }
 
 int SPH::Calculate_Cell_Hash(Vector3 pos)
 {
-	if((pos.x < 0)||(pos.x >= Grid_Size.x)||(pos.y < 0)||(pos.y >= Grid_Size.y)||
-	(pos.z < 0)||(pos.z >= Grid_Size.z))
-		return -1;
+	// if((pos.x < 0)||(pos.x >= Grid_Size.x)||(pos.y < 0)||(pos.y >= Grid_Size.y)||
+	// (pos.z < 0)||(pos.z >= Grid_Size.z))
+	// 	return -1;
+
+	int x = (int)pos.x & (int)((Grid_Size.x-1));  // wrap grid, assumes size is power of 2
+    int y = (int)pos.y & (int)((Grid_Size.y-1));
+    int z = (int)pos.z & (int)((Grid_Size.z-1));
 	
-	int hash = pos.x + Grid_Size.x * (pos.y + Grid_Size.y * pos.z);
+	int hash = x + (int)Grid_Size.x * (y + (int)Grid_Size.y * z);
+	// int hash = pos.x + Grid_Size.x * (pos.y + Grid_Size.y * pos.z);
+
 	if(hash > Number_Cells)
 		cout<<"Error";
 	return hash;
@@ -117,7 +124,8 @@ int SPH::Calculate_Cell_Hash(Vector3 pos)
 /// For density computation
 float SPH::Poly6(float r2)
 {
-	return (r2 >= 0 && r2 <= kernel*kernel) ? Poly6_constant * pow(kernel * kernel - r2, 3) : 0;
+	return (r2 <= kernel*kernel) ? Poly6_constant * pow(kernel * kernel - r2, 3) : 0;
+	// return (r2 >= 0 && r2 <= kernel*kernel) ? Poly6_constant * pow(kernel * kernel - r2, 3) : 0;
 }
 
 /// For force of pressure computation

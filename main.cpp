@@ -57,6 +57,43 @@ SPH *sph;
 int winX = 600;
 int winY = 600;
 
+char fps_message[50];
+int frameCount = 0;
+double average_fps = 0;
+float fps = 0;
+int total_fps_counts = 0;
+int currentTime = 0, previousTime = 0;
+
+void calculateFPS()
+{
+	//  Increase frame count
+	frameCount++;
+
+	//  Get the number of milliseconds since glutInit called
+	//  (or first call to glutGet(GLUT ELAPSED TIME)).
+	currentTime = glutGet(GLUT_ELAPSED_TIME);
+
+	//  Calculate time passed
+	int timeInterval = currentTime - previousTime;
+
+	if (timeInterval > 1000)
+	{
+		//  calculate the number of frames per second
+		fps = frameCount / (timeInterval / 1000.0f);
+
+		// if(simulate && simulation_active)
+		{
+			average_fps += fps;
+			total_fps_counts ++;
+		}
+		//  Set time
+		previousTime = currentTime;
+
+		//  Reset frame count
+		frameCount = 0;
+	}
+}
+
 void display_cube()
 {
 	glPushMatrix();
@@ -124,6 +161,10 @@ void display (void)
 
 void idle(void)
 {
+	calculateFPS();
+	sprintf(fps_message, "SPH SM M FPS %.3f", fps);
+	glutSetWindowTitle(fps_message);
+
 	sph->Animation();
 	glutPostRedisplay();
 }
@@ -163,6 +204,7 @@ void keys (unsigned char key, int x, int y)
 	switch (key) {
 		case 27:
 			delete sph;
+			cout << "Average FPS: " << average_fps / total_fps_counts<< endl;
             exit(0);
 			break;
 		case 'a':
