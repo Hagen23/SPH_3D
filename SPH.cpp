@@ -12,15 +12,18 @@ using namespace std;
 
 SPH::SPH()
 {
-	kernel = 0.02;
-	mass = 0.01f;
+	// kernel = 0.02;
+	kernel = 1.5;
+	// mass = 0.01f;
+	mass = 0.5f;
 
 	Max_Number_Paticles = 50000;
 	Number_Particles = 0;
 
-	World_Size = Vector3(1.0f, 1.0f, 1.0f);
+	// World_Size = Vector3(1.0f, 1.0f, 1.0f);
+	World_Size = Vector3(64.0f, 64.0f, 64.0f);
 
-	Cell_Size = 1.f/64.f*2;						// cell size = kernel or h
+	Cell_Size = 1.0f; //1.f/64.f*2;						// cell size = kernel or h
 	Grid_Size = World_Size / Cell_Size;
 	Grid_Size.x = 64;//(int)Grid_Size.x;
 	Grid_Size.y = 64;//(int)Grid_Size.y;
@@ -29,21 +32,31 @@ SPH::SPH()
 	Number_Cells = (int)Grid_Size.x * (int)Grid_Size.y * (int)Grid_Size.z;
 
 	Gravity = Vector3(0.0f, -9.8f, 0.0f);
-	K = 1.5f;
-	Stand_Density = 1000.0f;
+	// K = 1.5f;
+	K = 10.f;
+	// Stand_Density = 1000.0f;
+	Stand_Density = 0.2f;
 	max_vel = Vector3(3.0f, 3.0f, 3.0f);
 
 	/// Time step is calculated as in 2016 - Divergence-Free SPH for Incompressible and Viscous Fluids. 
 	/// Then we adapt the time step size according to the Courant-Friedrich-Levy (CFL) condition [6] ∆t ≤ 0.4 * d / (||vmax||)
-	Time_Delta = 0.4 * kernel / sqrt(max_vel.getNormSquared());
+	// Time_Delta = 0.4 * kernel / sqrt(max_vel.getNormSquared());
+	Time_Delta = 0.005;
 	Wall_Hit = -1.0f;
-	mu = 80.0f;
+	// mu = 80.0f;
+	mu = 0.5;
 
 	Particles = new Particle[Max_Number_Paticles];
 	Cells = new Cell[Number_Cells];
 
 	Poly6_constant = 315.0f/(64.0f * PI * pow(kernel, 9));
 	Spiky_constant = 45.0f/(PI * pow(kernel, 6));
+
+	total_time_steps = 0;
+	hash_d = duration_d();
+	density_pressure_d = duration_d();
+	force_d = duration_d();
+	update_d = duration_d();
 
 	cout<<"SPHSystem"<<endl;
 	cout<<"Grid_Size_X : "<<Grid_Size.x<<endl;
@@ -70,9 +83,13 @@ void SPH::Init_Fluid()
 	Vector3 pos;
 	Vector3 vel(0.0f, 0.0f, 0.0f);
 
-	for(float k = World_Size.z * 0.3f; k < World_Size.z * 0.7f; k += 0.016f)
-	for(float j = World_Size.y * 0.3f; j < World_Size.y * 0.7f; j += 0.016f)
-	for(float i = World_Size.x * 0.3f; i < World_Size.x * 0.7f; i += 0.016f)
+	// for(float k = World_Size.z * 0.3f; k < World_Size.z * 0.7f; k += 0.016f)
+	// for(float j = World_Size.y * 0.3f; j < World_Size.y * 0.7f; j += 0.016f)
+	// for(float i = World_Size.x * 0.3f; i < World_Size.x * 0.7f; i += 0.016f)
+			
+	for (int k = 0; k < 16; k++)
+	for (int j = 0; j < 32; j++)
+	for (int i = 0; i < 32; i++)
 	{
 			pos = Vector3(i, j, k);
 			Init_Particle(pos, vel);
@@ -259,9 +276,9 @@ void SPH::Computer_Force()
 			}
 		}
 		/// Sum of the forces that make up the fluid, Eq.8
-		p->acc = p->acc/p->dens;
+		p->acc += Gravity * mass;
+		p->acc = p->acc/mass;
 		
-		p->acc += Gravity;
 		//  p->acc += Vector3(10.0f, 0.0f, 0.0f);
 	}
 }
@@ -272,6 +289,8 @@ void SPH::Update_Pos_Vel()
 {
 	Particle *p;
 	
+	float displacement = 0.5;
+
 	for(int i=0; i < Number_Particles; i++)
 	{
 		p = &Particles[i];
@@ -281,42 +300,64 @@ void SPH::Update_Pos_Vel()
 		if(p->pos.x < 0.0f)
 		{
 			p->vel.x = p->vel.x * Wall_Hit;
-			p->pos.x = 0.0f;
+			p->pos.x = 0.0f + displacement;
 		}
 		if(p->pos.x >= World_Size.x)
 		{
 			p->vel.x = p->vel.x * Wall_Hit;
-			p->pos.x = World_Size.x - 0.0001f;
+			// p->pos.x = World_Size.x - 0.0001f;
+			p->pos.x = World_Size.x - displacement;
 		}
 		if(p->pos.y < 0.0f)
 		{
 			p->vel.y = p->vel.y * Wall_Hit;
-			p->pos.y = 0.0f;
+			p->pos.y = 0.0f+displacement;
 		}
 		if(p->pos.y >= World_Size.y)
 		{
 			p->vel.y = p->vel.y * Wall_Hit;
-			p->pos.y = World_Size.y - 0.0001f;
+			// p->pos.y = World_Size.y - 0.0001f;
+			p->pos.y = World_Size.y - displacement;
 		}
 		if(p->pos.z < 0.0f)
 		{
 			p->vel.z = p->vel.z * Wall_Hit;
-			p->pos.z = 0.0f;
+			p->pos.z = 0.0f + displacement;
 		}
 		if(p->pos.z >= World_Size.z)
 		{
 			p->vel.z = p->vel.z * Wall_Hit;
-			p->pos.z = World_Size.z - 0.0001f;
+			// p->pos.z = World_Size.z - 0.0001f;
+			p->pos.z = World_Size.z - displacement;
 		}
 	}
 }
 
 void SPH::Animation()
 {
+	tpoint tstart = std::chrono::system_clock::now();
 	Hash_Grid();
+	hash_d += std::chrono::system_clock::now() - tstart;
+
+	tstart = std::chrono::system_clock::now();
 	Compute_Density_SingPressure();
+	density_pressure_d += std::chrono::system_clock::now() - tstart;
+
+	tstart = std::chrono::system_clock::now();
 	Computer_Force();
+	force_d += std::chrono::system_clock::now() - tstart;
+
+	tstart = std::chrono::system_clock::now();
 	Update_Pos_Vel();
+	update_d += std::chrono::system_clock::now() - tstart;
+
+	total_time_steps++;
+}
+
+void SPH::print_report()
+{
+	cout << "Hash" << " \t\t" << "Density Pressure" << " " << "Force" << " \t\t " << "Update" << endl;
+	cout << hash_d.count() / total_time_steps << " \t " << density_pressure_d.count() / total_time_steps << " \t " << force_d.count() / total_time_steps << " \t " << update_d.count() / total_time_steps << endl; 
 }
 
 int SPH::Get_Particle_Number()

@@ -39,18 +39,18 @@ using namespace std;
 int mouse_old_x, mouse_old_y;
 int mouse_buttons = 0;
 float rotate_x = 0.0, rotate_y = 0.0;
-float translate_z = -3.0;
+float translate_z = -150.0;
 
 bool keypressed = false, simulate = false;
 
 float cubeFaces[24][3] = 
 {
-	{0.0,0.0,0.0}, {1.0,0.0,0.0}, {1.0,1.0,0.0}, {0.0,1.0,0.0},
-	{0.0,0.0,0.0}, {1.0,0.0,0.0}, {1.0,0,1.0}, {0.0,0,1.0},
-	{0.0,0.0,0.0}, {0,1.0,0.0}, {0,1.0,1.0}, {0.0,0,1.0},
-	{0.0,1.0,0.0}, {1.0,1.0,0.0}, {1.0,1.0,1.0}, {0.0,1.0,1.0},
-	{1.0,0.0,0.0}, {1.0,1.0,0.0}, {1.0,1.0,1.0}, {1.0,0.0,1.0},
-	{0.0,0.0,1.0}, {0,1.0,1.0}, {1.0,1.0,1.0}, {1.0,0,1.0}
+	{0.0,0.0,0.0}, {64.0,0.0,0.0}, {64.0,64.0,0.0}, {0.0,64.0,0.0},
+	{0.0,0.0,0.0}, {64.0,0.0,0.0}, {64.0,0,64.0}, {0.0,0,64.0},
+	{0.0,0.0,0.0}, {0,64.0,0.0}, {0,64.0,64.0}, {0.0,0,64.0},
+	{0.0,64.0,0.0}, {64.0,64.0,0.0}, {64.0,64.0,64.0}, {0.0,64.0,64.0},
+	{64.0,0.0,0.0}, {64.0,64.0,0.0}, {64.0,64.0,64.0}, {64.0,0.0,64.0},
+	{0.0,0.0,64.0}, {0,64.0,64.0}, {64.0,64.0,64.0}, {64.0,0,64.0}
 };
 
 SPH *sph;
@@ -203,6 +203,7 @@ void keys (unsigned char key, int x, int y)
 	static int toonf = 0;
 	switch (key) {
 		case 27:
+			sph->print_report();
 			delete sph;
 			cout << "Average FPS: " << average_fps / total_fps_counts<< endl;
             exit(0);
@@ -253,6 +254,7 @@ void initGL ()
 	printf("OpenGL version supported %s\n", version);
 	//printf("GLSL version supported %s\n", glslVersion);
 
+	glClearColor(0.8f, 0.8f, 0.8f, 1.0f);
 	glEnable(GL_DEPTH_TEST);
 }
 

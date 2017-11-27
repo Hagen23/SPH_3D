@@ -3,9 +3,13 @@
 
 #include "Vector3.h"
 #include "Particle.h"
+#include <chrono>
 
 #define PI 3.141592f
 #define INF 1E-12f
+
+typedef std::chrono::system_clock::time_point 	tpoint;
+typedef std::chrono::duration<double> 			duration_d;
 
 class SPH
 {
@@ -35,6 +39,9 @@ class SPH
 		Particle *Particles;
 		Cell *Cells;
 
+		int total_time_steps;
+		duration_d hash_d, density_pressure_d, force_d, update_d;
+
 	public:
 		SPH();
 		~SPH();
@@ -61,6 +68,8 @@ class SPH
 		Vector3 Get_World_Size();
 		Particle* Get_Paticles();
 		Cell* Get_Cells();
+
+		void print_report();
 };
 
 
